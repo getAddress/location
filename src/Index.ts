@@ -1,5 +1,5 @@
 import Location from "./Location";
-import { IOptions, Options } from "./Options";
+import { Options } from "./Options";
 import Client from 'getaddress-api';
 import { OutputFields } from "./OutputFields";
 import Style from "./Style";
@@ -16,7 +16,7 @@ class InstanceCounter
     
 }
 
-export function location(id:string,api_key:string, options?: IOptions)
+export function location(id:string,api_key:string, options: Partial<Options>)
 {
 
     if(!id){
@@ -35,7 +35,19 @@ export function location(id:string,api_key:string, options?: IOptions)
     
     const client = new Client(api_key,undefined,undefined, allOptions.alt_location_url,allOptions.alt_get_location_url);
     
-    const outputFields = new OutputFields(allOptions.output_fields,allOptions.set_default_output_field_names);
+    const outputFields = new OutputFields(allOptions.output_fields);
+    
+    if(allOptions.set_default_output_field_names)
+    {
+        outputFields.area= outputFields.area ??"area";
+        outputFields.town_or_city= outputFields.town_or_city??"town_or_city";
+        outputFields.county= outputFields.county?? "county";
+        outputFields.country= outputFields.country??"country";
+        outputFields.postcode= outputFields.postcode??"postcode";
+        outputFields.outcode= outputFields.outcode??"outcode";
+        outputFields.latitude= outputFields.latitude??"latitude";
+        outputFields.longitude= outputFields.longitude??"longitude";
+    }
     
     const index = InstanceCounter.instances.length;
 
@@ -59,3 +71,4 @@ export function destroy()
     }
     InstanceCounter.instances = [];
 }
+

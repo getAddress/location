@@ -1,0 +1,36 @@
+import { LocationFilter } from "getaddress-api";
+import { OutputFields } from "./OutputFields";
+export declare class Options {
+    id_prefix?: string;
+    css_prefix?: string;
+    output_fields?: Partial<OutputFields>;
+    delay: number;
+    minimum_characters: number;
+    clear_list_on_select: boolean;
+    select_on_focus: boolean;
+    alt_location_url?: string;
+    alt_get_location_url?: string;
+    input_class_names: string[];
+    input_show_class_names: string[];
+    list_class_names: string[];
+    container_class_names: string[];
+    suggestion_class_names: string[];
+    suggestion_focused_class_names: string[];
+    container_focused_class_names: string[];
+    highlight_suggestion: boolean;
+    highlight_suggestion_start_tag: string;
+    highlight_suggestion_end_tag: string;
+    list_width?: string;
+    suggestion_count: number;
+    suggestion_template: string;
+    suggestion_template_outcode: string;
+    suggestion_template_postcode: string;
+    filter?: Partial<LocationFilter>;
+    bind_output_fields: boolean;
+    input_focus_on_select: boolean;
+    debug: boolean;
+    enable_get_location: boolean;
+    set_default_output_field_names: boolean;
+    clear_on_select: boolean;
+    constructor(options?: Partial<Options>);
+}

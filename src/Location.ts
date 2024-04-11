@@ -8,13 +8,13 @@ import { Options } from "./Options";
 export default class Location
 {
 
-    private filterTimer: ReturnType<typeof setTimeout>
-    private blurTimer: ReturnType<typeof setTimeout>
-    private container:HTMLElement;
-    private list: HTMLElement;
+    private filterTimer?: ReturnType<typeof setTimeout>
+    private blurTimer?: ReturnType<typeof setTimeout>
+    private container?:HTMLElement = undefined; 
+    private list?: HTMLElement= undefined; 
     private selectedIndex = -1;
-    private showAllClicked:boolean;
-    private documentClick: EventListenerObject;
+    private showAllClicked?:boolean;
+    private documentClick?: any;
 
     constructor(readonly input:HTMLInputElement,readonly client:Client,
         readonly output_fields:OutputFields, readonly attributeValues:AttributeValues)
@@ -30,17 +30,22 @@ export default class Location
 
     private destroyList()
     {
-        this.list.remove();
+        if(this.list){
+            this.list.remove();
+        }
     }
 
-    private destroyContainer(){
+    private destroyContainer()
+    {
+        if(this.container)
+        {
+            this.container.removeEventListener('keydown',this.onContainerKeyDown);
+            this.container.removeEventListener('keyup',this.onContainerKeyUp);
+            this.container.removeEventListener('focusout',this.onContainerFocusOut);
 
-        this.container.removeEventListener('keydown',this.onContainerKeyDown);
-        this.container.removeEventListener('keyup',this.onContainerKeyUp);
-        this.container.removeEventListener('focusout',this.onContainerFocusOut);
-
-        const children = Array.from(this.container.childNodes);
-        this.container.replaceWith(...children);
+            const children = Array.from(this.container.childNodes);
+            this.container.replaceWith(...children);
+        }
     }
 
     private destroyInput(){
@@ -63,7 +68,7 @@ export default class Location
         this.input.removeEventListener('paste',this.onInputPaste);
     }
 
-    private onInputFocus =  (event) => {
+    private onInputFocus =  () => {
         this.addContainerFocusedClassNames();
         
         if(this.attributeValues.options.select_on_focus){
@@ -72,7 +77,7 @@ export default class Location
         this.selectedIndex = -1;
     };
 
-    private onInputPaste = (event) => {
+    private onInputPaste = () => {
         setTimeout(()=>{this.populateList();},100);
     };
 
@@ -86,15 +91,16 @@ export default class Location
         this.keyDownHandler(event);
     };
 
-    private onContainerFocusOut = (event) => {
+    private onContainerFocusOut = (event:Event) => {
           
         this.handleComponentBlur(event, false);
      }
 
     public build()
     {
+        
         this.documentClick = this.handleComponentBlur.bind(this);
-
+        
         this.input.classList.add(this.attributeValues.inputClassName);
         if(this.attributeValues.inputAdditionalClassNames){
             for(const name of this.attributeValues.inputAdditionalClassNames){
@@ -118,7 +124,10 @@ export default class Location
             }
         }
 
-        this.input.parentNode.insertBefore(this.container,this.input);
+        if(this.input.parentNode)
+        {
+            this.input.parentNode.insertBefore(this.container,this.input);
+        }
         
         this.input.addEventListener('focus', this.onInputFocus);
 
@@ -141,12 +150,15 @@ export default class Location
         this.list.setAttribute('aria-hidden', 'true');
 
         this.list.addEventListener('mouseenter', (event) => {
-            const suggestions = this.list.children;
-            this.removeSuggestionFocusedClassName(suggestions);
+            if(this.list)
+            {
+                const suggestions = this.list.children;
+                this.removeSuggestionFocusedClassName(suggestions);
+            }
         });
        
         this.list.addEventListener('click', (event) => {
-            if (event.target !== this.list) 
+            if (this.list && event.target !== this.list) 
             {
                 const suggestions = Array.from(this.list.children);
                 if (suggestions.length) 
@@ -210,20 +222,20 @@ export default class Location
     };
 
     handlePageUpKey = (event: KeyboardEvent) => {
-        if (!this.list.hidden) {
+        if (this.list && !this.list.hidden) {
             event.preventDefault();
             this.setSuggestionFocus(event, 0);
         }
     }
     handlePageDownKey = (event: KeyboardEvent) => {
-        if (!this.list.hidden) {
+        if (this.list && !this.list.hidden) {
             event.preventDefault();
             this.setSuggestionFocus(event, this.list.children.length -1);
         }
     }
 
     handleHomeKey = (event: KeyboardEvent) => {
-        if (!this.list.hidden && event.target !== this.input) {
+        if (this.list && !this.list.hidden && event.target !== this.input) {
             event.preventDefault();
             this.setSuggestionFocus(event, 0);
         }
@@ -231,13 +243,16 @@ export default class Location
 
     handleComponentBlur = (event: Event, force: boolean = false) =>{
         
-        clearTimeout(this.blurTimer);
+        if(this.blurTimer){
+            clearTimeout(this.blurTimer);
+        }
 
         const delay: number = force ? 0 : 100;
         this.blurTimer = setTimeout(() => {
-            const activeElem: Element = document.activeElement;
+            const activeElem: Element|null = document.activeElement;
             if (!force &&
                 activeElem &&
+                this.container &&
                 this.container.contains(activeElem)
             ) {
                 return;
@@ -255,7 +270,7 @@ export default class Location
 
 
     handleEndKey = (event: KeyboardEvent) => {
-        if (!this.list.hidden) {
+        if (this.list && !this.list.hidden) {
             const suggestions = this.list.children;
             if (suggestions.length) {
                 event.preventDefault();
@@ -265,7 +280,7 @@ export default class Location
     }
 
     handleEnterKey = (event: KeyboardEvent) =>{
-        if (!this.list.hidden) {
+        if (this.list && !this.list.hidden) {
             event.preventDefault();
             if (this.selectedIndex > -1) {
                 this.handleSuggestionSelected(event, this.selectedIndex);
@@ -277,7 +292,7 @@ export default class Location
         
         this.setSuggestionFocus(event,indexNumber);
         
-        if(this.selectedIndex > -1)
+        if(this.list && this.selectedIndex > -1)
         {
             const suggestions = this.list.children;
             const suggestion = suggestions[this.selectedIndex] as HTMLElement;
@@ -300,7 +315,7 @@ export default class Location
                     this.clearList();
                 }
 
-                const id = suggestion.dataset.id;
+                const id = suggestion.dataset.id ?? "";
                 const locationResult = await this.client.getLocation(id);
                 if(locationResult.isSuccess){
                     let success = locationResult.toSuccess();
@@ -341,7 +356,7 @@ export default class Location
         }
     };
 
-    private setOutputfield = (fieldName:string, fieldValue:string) =>
+    private setOutputfield = (fieldName:string|undefined, fieldValue:string) =>
     {
             if(!fieldName){
                 return;
@@ -368,8 +383,11 @@ export default class Location
     handleKeyDownDefault = (event: KeyboardEvent)=>{
         
         let isPrintableKey = event.key.length === 1 || event.key === 'Unidentified';
-        if(isPrintableKey){
-            clearTimeout(this.filterTimer);
+        if(isPrintableKey)
+        {
+            if(this.filterTimer){
+                clearTimeout(this.filterTimer);
+            }
             
             this.filterTimer = setTimeout(() => 
             {
@@ -381,7 +399,7 @@ export default class Location
                 }
             },this.attributeValues.options.delay);
         }
-        else if(!this.list.hidden && this.input.value.length < this.attributeValues.options.minimum_characters)
+        else if(this.list && !this.list.hidden && this.input.value.length < this.attributeValues.options.minimum_characters)
         {
             this.clearList(); 
         }
@@ -404,7 +422,7 @@ export default class Location
                     this.populateList();
                 }
             }
-            else if(this.container.contains(target as HTMLElement)){
+            else if(this.container && this.container.contains(target as HTMLElement)){
                 this.input.focus();
                 this.input.setSelectionRange(this.input.value.length,this.input.value.length+1);
             }
@@ -416,7 +434,7 @@ export default class Location
 
     handleUpKey(event: KeyboardEvent) {
         event.preventDefault();
-        if (!this.list.hidden) {
+        if (this.list && !this.list.hidden) {
             this.setSuggestionFocus(event, this.selectedIndex - 1);
         }
     }
@@ -424,7 +442,7 @@ export default class Location
     handleDownKey = (event: KeyboardEvent) => {
         event.preventDefault();
 
-        if (!this.list.hidden) 
+        if (this.list && !this.list.hidden) 
         {
             if (this.selectedIndex < 0) {
                 this.setSuggestionFocus(event, 0);
@@ -437,33 +455,36 @@ export default class Location
 
     setSuggestionFocus = (event:Event, index:number) => {
        
-        const suggestions = this.list.children;
-       
-        this.removeSuggestionFocusedClassName(suggestions);
+        if(this.list)
+        {
+            const suggestions = this.list.children;
+        
+            this.removeSuggestionFocusedClassName(suggestions);
 
-        if (index < 0 || !suggestions.length) {
-            this.selectedIndex = -1;
-            if (event && (event as Event).target !== this.input) {
-                this.input.focus();
+            if (index < 0 || !suggestions.length) {
+                this.selectedIndex = -1;
+                if (event && (event as Event).target !== this.input) {
+                    this.input.focus();
+                }
+                return;
             }
-            return;
-        }
 
-        if (index >= suggestions.length) {
-            this.selectedIndex = suggestions.length - 1;
-            this.setSuggestionFocus(event, this.selectedIndex);
-            return;
-        }
+            if (index >= suggestions.length) {
+                this.selectedIndex = suggestions.length - 1;
+                this.setSuggestionFocus(event, this.selectedIndex);
+                return;
+            }
 
-        const focusedSuggestion = suggestions[index] as HTMLElement;
-        if (focusedSuggestion) {
-            this.selectedIndex = index;
-            this.addSuggestionFocusedClassName(focusedSuggestion);
-            focusedSuggestion.focus();
-            return;
-        }
+            const focusedSuggestion = suggestions[index] as HTMLElement;
+            if (focusedSuggestion) {
+                this.selectedIndex = index;
+                this.addSuggestionFocusedClassName(focusedSuggestion);
+                focusedSuggestion.focus();
+                return;
+            }
 
-        this.selectedIndex = -1;
+            this.selectedIndex = -1;
+        }
 
     }
 
@@ -500,7 +521,7 @@ export default class Location
                 const success = result.toSuccess();
                 const newItems:Node[] = [];
 
-                if(success.suggestions.length)
+                if(this.list && success.suggestions.length)
                 {
                     const totalLength = success.suggestions.length;
 
@@ -543,19 +564,25 @@ export default class Location
     
 
     private addContainerFocusedClassNames = () =>{
-        this.container.classList.add(this.attributeValues.containerFocusedClassName);
-        
-        if(this.attributeValues.containerFocusedAdditionalClassNames){
-            for(const name of this.attributeValues.containerFocusedAdditionalClassNames){
-                this.container.classList.add(name);
+        if(this.container)
+        {
+            this.container.classList.add(this.attributeValues.containerFocusedClassName);
+            
+            if(this.attributeValues.containerFocusedAdditionalClassNames){
+                for(const name of this.attributeValues.containerFocusedAdditionalClassNames){
+                    this.container.classList.add(name);
+                }
             }
         }
     };
     private removeContainerFocusedClassNames = () =>{
-        this.container.classList.remove(this.attributeValues.containerFocusedClassName);
-        if(this.attributeValues.containerFocusedAdditionalClassNames){
-            for(const name of this.attributeValues.containerFocusedAdditionalClassNames){
-                this.container.classList.remove(name);
+        if(this.container)
+        {
+            this.container.classList.remove(this.attributeValues.containerFocusedClassName);
+            if(this.attributeValues.containerFocusedAdditionalClassNames){
+                for(const name of this.attributeValues.containerFocusedAdditionalClassNames){
+                    this.container.classList.remove(name);
+                }
             }
         }
     };
@@ -577,21 +604,30 @@ export default class Location
         }
     }
 
-    private removeListShowAllClassNames =()=>{
-        this.list.classList.remove(this.attributeValues.listShowAllClassName); 
-        if(this.attributeValues.listShowAllAdditionalClassNames){
-            for(const name of this.attributeValues.listShowAllAdditionalClassNames){
-                this.list.classList.remove(name);
+    private removeListShowAllClassNames =()=>
+    {
+        if(this.list)
+        {
+            this.list.classList.remove(this.attributeValues.listShowAllClassName); 
+            if(this.attributeValues.listShowAllAdditionalClassNames){
+                for(const name of this.attributeValues.listShowAllAdditionalClassNames){
+                    this.list.classList.remove(name);
+                }
             }
         }
     }
 
 
-    clearList = ()=>{
-        this.list.replaceChildren(...[]);
-        this.list.hidden = true;
-        this.input.setAttribute('aria-expanded', 'false');
-        this.list.setAttribute('aria-hidden', 'true');
+    clearList = ()=>
+    {
+        if(this.list)
+        {
+            this.list.replaceChildren(...[]);
+            this.list.hidden = true;
+            this.input.setAttribute('aria-expanded', 'false');
+            this.list.setAttribute('aria-hidden', 'true');
+        }
+
         this.selectedIndex = -1;
         this.removeInputShowClassNames();
         this.removeListShowAllClassNames();
