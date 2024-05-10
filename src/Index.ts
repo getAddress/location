@@ -16,7 +16,7 @@ class InstanceCounter
     
 }
 
-export function location(id:string,api_key:string, options: Partial<Options>)
+function location(id:string,api_key:string, options: Partial<Options>)
 {
 
     if(!id){
@@ -64,11 +64,13 @@ export function location(id:string,api_key:string, options: Partial<Options>)
     InstanceCounter.add(loaction);
 }
 
-export function destroy()
+function destroy()
 {
     for(const instance of InstanceCounter.instances){
         instance.destroy();
     }
     InstanceCounter.instances = [];
 }
+
+export {location,destroy,Options}
 
