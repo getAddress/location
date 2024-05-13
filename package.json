@@ -21,7 +21,8 @@
     "getAddress",
     "plugin",
     "UK",
-    "location"
+    "location",
+    "getaddress.io"
   ],
   "author": "getAddress()",
   "license": "MIT",
